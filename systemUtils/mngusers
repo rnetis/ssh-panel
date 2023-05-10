@@ -1,0 +1,84 @@
+#!/bin/sh
+
+if [ -z $RYNPORT ]; then
+    RYNPORT=22
+fi
+
+if [ $(whoami) != 'root' ]; then
+    echo "this Script Should Only Work as root"
+    exit 1
+fi
+
+ter_user() {
+    loginctl terminate-user $1
+}
+
+del_user() {
+    ter_user $1
+    deluser $1
+}
+
+list_users() {
+    cat /etc/passwd | grep -e '10[0-9][0-9]' | cut -d ':' -f1 | while read line; do
+        echo "$line\t$(chage -l $line | awk '/Account exp/ {print $4,$5,$6}')" | sed 's/,//'
+    done
+}
+
+exp_user() {
+    ter_user $2
+    if [ -z $4 ]; then
+        usermod -e $(date --date="+${3} day" +"%F") $2
+    else
+        usermod -e $(date --date="${4}  +${3} day" +"%F") $2
+    fi
+}
+
+change_passwd() {
+    ter_user $2
+    usermod -p $(echo $1 | openssl passwd -1 -stdin) $2
+}
+
+if [ -z $1 ]; then
+    echo "Usage: mngusers [command]"
+    echo "Commands:"
+    echo "\tCreate New User -> add [user] [password] [day]"
+    echo "\tAdding expiration date by days -> exp [days] [user]"
+    echo "\tExtending Expiration Date -> extendExp [days] [user]"
+    echo "\tLock User -> lock [user]"
+    echo "\tUnlock User-> unlock [user]"
+    echo "\tChange Password -> passwd [password] [user]"
+    echo "\tList Users -> list"
+elif [ $1 = 'exp' ]; then
+    exp_user $3 $2
+    echo "Set Expiration Date to $2 for $3"
+elif [ $1 = 'extendExp' ]; then
+    EXPD=$(chage -l $3 | awk '/Account expires/ {print $4,$5,$6}' | sed 's/,//')
+    if [ $EXPD = 'never' ]; then
+        exp_user $3 $2
+    else
+        exp_user $3 $2 $EXPD
+    fi
+    echo "Changed Exiration Date of $3 $EXPD +$2"
+elif [ $1 = 'lock' ]; then
+    ter_user $3
+    usermod -L $2
+    echo "User $2 Locked"
+elif [ $1 = 'unlock' ]; then
+    ter_user $3
+    usermod -U $2
+    echo "User $2 Unlocked"
+elif [ $1 = 'passwd' ]; then
+    change_passwd $2 $3
+    echo "Password Changed => $3 -> $2"
+elif [ $1 = 'list' ]; then
+    list_users
+elif [ $1 = 'add' ]; then
+    useradd -M -s /usr/sbin/nologin -e $(date --date="+${4} day" +"%F") -p $(echo $3 | openssl passwd -1 -stdin) $2
+    echo "Host: $(cat /etc/hostname)"
+    echo "Port: $RYNPORT"
+    echo "Username: $2"
+    echo "Password: $3"
+    echo "Expire: $(date --date="+${4} day" +"%F")"
+elif [ $1 = 'test' ]; then
+    echo $# $@
+fi
