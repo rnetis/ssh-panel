@@ -1,0 +1,10 @@
+[Unit]
+Description="RYN Management Web Service"
+
+[Service]
+User=root
+ExecStart=/usr/bin/rynpanel
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

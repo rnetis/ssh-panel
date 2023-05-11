@@ -28,10 +28,8 @@ if [ -z $1 ]; then
 
 elif [ $1 = 'extendExp' ]; then
 
-    EXPD=$(chage -l $3 | awk '/Account expires/ {print $4,$5,$6}' | sed 's/,//')
-    echo $EXPD
-    usermod -e $(date --date="$EXPD +${2} day" +"%F") $3
-    echo "Changed Exiration Date of $3 $EXPD +$2"
+    usermod -e $(date --date="$2" +"%F") $3
+    echo "Changed Exiration Date of $3 $2"
 
 elif [ $1 = 'lock' ]; then
 

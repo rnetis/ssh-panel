@@ -11,8 +11,15 @@ elif [ -z $(which snap) ]; then
     exit 1
 fi
 
+if [ -z $RYN_ADMIN_PASSWORD ]; then
+    echo "Please Add Your Admin Password to RYN_ADMIN_PASSWORD (Should Be 16 Characters)"
+fi
+
 chmod +x systemUtils/mngusers
 mv systemUtils/mngusers /usr/bin/mngusers
+mv systemUtils/killabuse.service /etc/systemd/system
 mkdir /usr/share/rynPanel
 mv * /usr/share/rynPanel
 cd /usr/share/rynPanel
+go build .
+mv rynpanel /usr/bin

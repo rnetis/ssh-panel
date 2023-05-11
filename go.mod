@@ -1,3 +1,3 @@
-module ssh-panel
+module rynpanel
 
 go 1.20
