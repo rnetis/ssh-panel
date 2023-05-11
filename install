@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ $(whoami) != 'root' ]; then
+    echo "You Are Not Root!"
+    exit 1
+elif [ -z $(which go) ]; then
+    echo "go is not installed"
+    exit 1
+elif [ -z $(which snap) ]; then
+    echo "snap is not installed"
+    exit 1
+fi
+
+chmod +x systemUtils/mngusers
+mv systemUtils/mngusers /usr/bin/mngusers
+mkdir /usr/share/rynPanel
+mv * /usr/share/rynPanel
+cd /usr/share/rynPanel

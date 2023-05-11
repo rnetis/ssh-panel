@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"fmt"
 	"os/exec"
+	"errors"
 )
 
 func sCommand(s string) (string, error) {
@@ -13,52 +15,39 @@ func sCommand(s string) (string, error) {
 	return string(out[:]), nil
 }
 
-func userCreate(name string, password string, duration int) bool {
-	command := `useradd -M -s /usr/sbin/nologin -p $(echo ` + password + ` | openssl passwd -1 -stdin) `
-	if duration != 0 {
-		command += name
-	} else {
-		command += `-e $(date --date="+` + string(duration) + ` month" +"%F") ` + name
-	}
-	out, err := sCommand(command)
-	if err != nil {
-		log.Println("Error on Creating User:", err)
-		return false
-	}
-	log.Println(string(out[:]))
-	return true
-}
+func actionUser(action string, data ...interface{}) (bool, error) {
 
-func userDelete(name string) bool {
-	command := `deluser ` + name
-	_, err := sCommand(command)
-	if err != nil {
-		log.Println("Error on Deleting User:", err)
-		return false
+	switch action {
+		case "new":
+			//check Existanse on database also send notification to phone
+			//add new user to database
+			command := fmt.Sprintf("add %s %s %d", data[0]/*username*/, data[1]/*password*/, data[2]/*expiration date by number of days*/)
+			args := strings.Split(command)
+		case "delete":
+			//check existance on database
+			//delete user from database
+			command := fmt.Sprintf("del %s", data[0]/*username*/)
+			args := strings.Split(command)
+		case "lock":
+			command := fmt.Sprintf("lock %s", data[0]/*username*/)
+			args := strings.Split(command)
+		case "unlock":
+			command := fmt.Sprintf("unlock %s", data[0]/*username*/)
+			args := strings.Split(command)
+		case "chpasswd":
+			//check existance on database also update database
+			command := fmt.Sprintf("passwd %s %s", data[1]/*New Password*/, data[0]/*Username*/)
+			args := strings.Split(command)
+		case "extend":
+			//check for existance and update the database
+			command := fmt.Sprintf("extendExp %d %s", data[1]/*Number of day for extending exiration*/, data[0]/*Username*/)
+			args := strings.Split(command)
+		default:
+			return false, errors.New("Invalid Action")
 	}
-	return true
-}
-
-func userRead(name string) (string, error) {
-	out, err := sCommand(`chage -l ` + name + ` | grep 'Account expires'`)
+	_ , err := exec.Command("mngusers", args...).Output()
 	if err != nil {
-		log.Println("Error on Reading User:", err)
-		return "", err
+		return false, err
 	}
-	lastLogin, err := sCommand(`cat /var/log/auth.log | awk '/Accepted password/ {print}' | grep ` + name + ` | tail -n 1`)
-	if err != nil {
-		log.Println("Error on Reading User:", err)
-		return "", err
-	}
-	return out + "\n" + lastLogin, nil
-}
-
-func main() {
-	userCreate("goTest", "1029384756", 1)
-	getUser, err := userRead("goTest")
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println(getUser)
-	userDelete("goTest")
+	return true, nil
 }

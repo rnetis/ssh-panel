@@ -1,0 +1,11 @@
+#!/bin/bash
+
+while [[ 1 -eq 1 ]]; do 
+    loginctl | head -n -2 | tail -n +2 | grep -v root | awk '{print $2,$3}' | sort | uniq -c | while read line; do 
+        if [[ $(echo $line | awk '{print $1}') -gt 2 ]]; then 
+            echo $line >> /var/log/abuse.log
+            loginctl terminate-user $(echo $line | awk '{print $2}')
+        fi
+    done
+sleep 2
+done

@@ -1,0 +1,10 @@
+[Unit]
+Description="Killing Abused Users"
+
+[Service]
+User=root
+ExecStart=/bin/bash /usr/share/rynPanel/systemUtils/killAbuse
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
